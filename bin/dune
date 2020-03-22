@@ -1,0 +1,3 @@
+(executable
+  (name webcamel)
+  (libraries lwt webcamel fmt.tty logs logs.fmt))

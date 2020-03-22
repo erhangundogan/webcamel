@@ -1,0 +1,9 @@
+_build
+.merlin
+*.install
+.*.swp
+docs/html/
+docs/*.zip
+_coverage/
+_opam/
+tmp

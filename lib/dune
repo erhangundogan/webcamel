@@ -1,0 +1,4 @@
+(library
+ (name webcamel)
+ (public_name webcamel)
+ (libraries lwt cohttp-lwt cohttp-lwt-unix lambdasoup logs))
