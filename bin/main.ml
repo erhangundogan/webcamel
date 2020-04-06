@@ -2,16 +2,26 @@ open Lwt.Infix
 open Webcamel
 
 let crawl address =
-  Parse.start (Uri.to_string address) >>= Store.save
+  let set = Parse.USet.empty in
+  let current = Parse.USet.add address set in
+  let rec aux all used = match Parse.USet.compare all used with
+  | 0 -> Lwt.return_unit
+  | _ ->
+    let diff = Parse.USet.diff all used in
+    let item = Parse.USet.min_elt diff in
+    (Parse.start item) >>= fun result ->
+      Store.save result >>= fun _ ->
+        aux (Parse.USet.union all result.locals) (Parse.USet.add item used) in
+    aux current Parse.USet.empty
 
 let recall address =
   Store.Data.load (Uri.to_string address) >|= fun store_item -> Store.Data.pp store_item
 
-let run arg_uri =
+let run uri _int _ext =
   Fmt_tty.setup_std_outputs ();
   Logs.set_level @@ Some Logs.Info;
   Logs.set_reporter (Logs_fmt.reporter ());
-  Lwt_main.run (crawl arg_uri)
+  Lwt_main.run (crawl uri)
 
 open Cmdliner
 
@@ -25,6 +35,21 @@ let arg_uri =
   in
   Arg.(required & pos 0 (some loc) None & info [] ~docv:"URI" ~doc)
 
+let arg_internal =
+  let doc =
+    "Crawl internal web site with all paths" in
+  Arg.(value & flag & info ["i"; "internal"] ~doc)
+
+let arg_external =
+  let doc =
+    "Crawl external domains (n) iterations (default None)" in
+  Arg.(value & opt (some int) None & info ["e"; "external"] ~doc)
+
+(*let arg_connection_count =
+  let doc =
+    "Max connection in parallel (default 1)" in
+  Arg.(value & opt int 1 & info ["c"; "conection"] ~doc)*)
+
 let cmd =
   let doc = "Retrieve a remote URI content and extract URLs" in
   let man = [
@@ -35,7 +60,7 @@ let cmd =
     `S "BUGS";
     `P "Report then via e-mail to Erhan Gundogan <erhan.gundogan at gmail.com>." ]
   in
-  Term.(pure run $ arg_uri),
+  Term.(pure run $ arg_uri $ arg_internal $ arg_external),
   Term.info "webcamel" ~version:Webcamel.Version.v ~doc ~man
 
 let () =

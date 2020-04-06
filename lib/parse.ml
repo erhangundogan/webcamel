@@ -56,9 +56,8 @@ let filter_links ?(is_local=false) ?(is_global=false) base_uri items =
   | false, true -> USet.filter (fun uri -> not @@ has_same_host base_uri uri) items
   | _, _ -> failwith "Please select true either for is_local or is_global"
 
-let start (address: string): p_t Lwt.t =
+let start (uri: Uri.t): p_t Lwt.t =
   let time = Unix.gettimeofday () in
-  let uri = Uri.of_string address in
   Http.fetch uri >>= fun (content, headers, final_uri) ->
   let items = get_links uri content in
   let locals = filter_links uri items ~is_local:true ~is_global:false in
