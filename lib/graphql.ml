@@ -120,14 +120,12 @@ end
 module Server =
   Irmin_unix.Graphql.Server.Make_ext (Data_store) (Remote) (Custom_types)
 
-let root = "/tmp/irmin/data"
-
 let init () =
-  let config = Irmin_git.config root in
+  let config = Irmin_git.config Config.details_irmin_root in
   Data_store.Repo.v config >>= fun repo ->
   let server = Server.v repo in
-  let src = "localhost" in
-  let port = 9876 in
+  let src = Config.graphql_server.host in
+  let port = Config.graphql_server.port in
   Conduit_lwt_unix.init ~src () >>= fun ctx ->
   let ctx = Cohttp_lwt_unix.Net.init ~ctx () in
   let on_exn exn = Printf.printf "on_exn: %s" (Printexc.to_string exn) in

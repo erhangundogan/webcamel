@@ -8,9 +8,7 @@ let c_info fmt = Irmin_unix.info ~author fmt
 module Site = struct
   module Site_store = Irmin_unix.Git.FS.KV(Irmin.Contents.String)
 
-  let root = "/tmp/irmin/sites"
-
-  let config repo = Irmin_git.config (root ^ "/" ^ repo)
+  let config repo = Irmin_git.config (Config.pages_irmin_root ^ "/" ^ repo)
 
   let save address content =
     let repo = get_repo address in
@@ -29,7 +27,7 @@ module Site = struct
 end
 
 module Data = struct
-  let config = Irmin_git.config (Graphql.root)
+  let config = Irmin_git.config (Config.details_irmin_root)
 
   let convert (item: p_t): Graphql.Page.t =
     let convert_set s =
