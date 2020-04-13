@@ -18,20 +18,21 @@ let extract_urls soup =
   | h :: t -> aux (USet.add (Uri.of_string (R.attribute "href" h)) acc) t in
   aux USet.empty (soup $$ "a[href]" |> to_list)
 
+let replace uri base_uri = Uri.with_uri uri
+  ~scheme:(Uri.scheme base_uri)
+  ~host:(Uri.host base_uri)
+  ~port:(Uri.port base_uri)
+  ~fragment:None
+  ~query:None
+
+let minify uri = Uri.with_uri uri
+  ~fragment:None
+  ~query:None
+
 let normalise_all base_uri items =
-  let replace uri = Uri.with_uri uri
-    ~scheme:(Uri.scheme base_uri)
-    ~host:(Uri.host base_uri)
-    ~fragment:None
-    ~query:None
-  in
-  let minify uri = Uri.with_uri uri
-    ~fragment:None
-    ~query:None
-  in
   USet.map (fun uri ->
     if Option.is_none (Uri.scheme uri)
-    then replace uri
+    then replace uri base_uri
     else minify uri
   ) items
 

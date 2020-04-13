@@ -1,27 +1,10 @@
-open Lwt.Infix
 open Webcamel
-
-let crawl address =
-  let set = Parse.USet.empty in
-  let current = Parse.USet.add address set in
-  let rec aux all used = match Parse.USet.compare all used with
-  | 0 -> Lwt.return_unit
-  | _ ->
-    let diff = Parse.USet.diff all used in
-    let item = Parse.USet.min_elt diff in
-    (Parse.start item) >>= fun result ->
-      Store.save result >>= fun _ ->
-        aux (Parse.USet.union all result.locals) (Parse.USet.add item used) in
-    aux current Parse.USet.empty
-
-let recall address =
-  Store.Data.load (Uri.to_string address) >|= fun store_item -> Store.Data.pp store_item
 
 let run uri _int _ext =
   Fmt_tty.setup_std_outputs ();
   Logs.set_level @@ Some Logs.Info;
   Logs.set_reporter (Logs_fmt.reporter ());
-  Lwt_main.run (crawl uri)
+  Lwt_main.run (Main.crawl uri)
 
 open Cmdliner
 
