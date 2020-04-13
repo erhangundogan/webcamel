@@ -37,7 +37,7 @@ module Page = struct
   let merge = Irmin.Merge.(option (idempotent t))
 end
 
-module Data_store = Irmin_unix.Git.FS.KV (Page)
+module Data_store = Irmin_unix.FS.KV (Page)
 
 module Custom_types = struct
   module Defaults = Irmin_graphql.Server.Default_types (Data_store)
@@ -114,16 +114,16 @@ module Custom_types = struct
 end
 
 module Remote = struct
-  let remote = Some Data_store.remote
+  let remote = None
 end
 
 module Server =
   Irmin_unix.Graphql.Server.Make_ext (Data_store) (Remote) (Custom_types)
 
-let root = "/tmp/irmin/data"
+let root = "/tmp/irmin/fs/data"
 
 let init () =
-  let config = Irmin_git.config root in
+  let config = Irmin_fs.config root in
   Data_store.Repo.v config >>= fun repo ->
   let server = Server.v repo in
   let src = "localhost" in
