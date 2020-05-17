@@ -63,6 +63,7 @@ Open your browser and navigate to http://localhost:9876/graphql and run this gra
 }
 ```
 
+![graphql-query-result](https://github.com/erhangundogan/webcamel/blob/master/gql.png)
 
 Internal Structure
 ==================
