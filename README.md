@@ -85,7 +85,15 @@ FILE index.html
 
 ## /tmp/irmin/data
 
-all top level domains included under the same git repo.
+all top level domains included under the same git repo. There are 6 fields stored from the request aside HTML source code.
+
+- `uri` (string) Requested URI
+- `redirect` (string option) Eventual URI if there is a redirection
+- `secure` (bool) Is the URI provides secure connection
+- `locals` (string list) Addresses extracted from the page that belongs to TLD. This is Uri.t Set for the absolute URIs.
+- `globals` (string list) Similar to `locals` but these URIs belong to other TLDs.
+- `header` (header list) Key/Value list for the received HTTP Headers. 
+
 ```
 $ irmin list -s git --root /tmp/irmin/data /
 DIR  example.org
