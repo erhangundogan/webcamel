@@ -1,6 +1,13 @@
 # WebCamel
 
-Crawler for the web.
+Customizable web crawler. It uses [cohttp](https://github.com/mirage/ocaml-cohttp) client to fetch the addresses. It starts from single URI and goes through other links that have been found in the URI response. It saves data to [irmin](https://github.com/mirage/irmin) git storage which could be viewed by GraphQL client.
+
+This tool is still in development although it could be used to fetch all pages in TLD. There are things missing such as jump to global URI, create queue and handling multiple lwt threads etc. 
+
+There are two executables in the bin folder.
+
+- `main` starts crawling immediately. By default it doesn't jump to other TLDs. The reason is to fetch all pages that belongs to same website.
+- `graphql` provides GraphQL server to view details of the data gathered. 
 
 Install
 =======
@@ -11,100 +18,139 @@ $ cd webcamel
 $ dune build
 ```
 
-Structure
-=========
+Run
+===
 
-## /sites
+Run the crawler:
 
-git repo per top level domain:
-```
-$ ls
-/example.org
-/edition.cnn.com
-/localhost
-
-$ cd localhost
-$ irmin list /
-DIR  baz
-DIR  foo
-FILE index.html
+```bash
+$ ./_build/default/bin/main.exe https://www.example.org
+main.exe: [INFO] Fetching: https://www.example.org
+main.exe: [INFO] Total 1 URL addresses extracted in 0.976784 secs. locals: 0, globals: 1
+main.exe: [INFO] Saving data repo:(example.org) to key:(/example.org/index.html)
+main.exe: [INFO] Saving site repo:(example.org) to key:(/index.html)
 ```
 
-## /data
+and run irmin graphql server:
 
-all top level domains included
+```bash
+$ ./_build/default/bin/graphql.exe
+Visit GraphiQL @ http://localhost:9876/graphql
 ```
-$ irmin list /
-DIR  edition.cnn.com
-DIR  example.org
-DIR  localhost
 
-$ irmin list /localhost
-DIR  baz
-DIR  foo
-FILE index.html
+Open your browser and navigate to http://localhost:9876/graphql and run this graphql query:
 
-$ irmin get /localhost/index.html
+```graphql
 {
-  "uri": "http://localhost:8000/",
-  "secure": 0,
+  master {
+    tree {
+      get_contents(key:"/example.org/index.html") {
+        key
+        value {
+          uri
+          redirect
+          secure
+          locals
+          globals
+          headers {
+            key
+            value
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+
+Internal Structure
+==================
+
+irmin uses git-fs mode to save data into the `/tmp` folder so they would be disposed. If you want to keep data change it from the config.ml
+
+There are 2 irmin stores. One for page sources and one for the page details. The one above shows page details.
+
+## /tmp/irmin/sites
+
+git repo per TLD. You can see the repos if you change the directory.
+```bash
+$ cd /tmp/irmin/sites
+$ ls
+example.org/ x.com/
+
+$ irmin list -s git --root /tmp/irmin/sites/example.org /
+FILE index.html
+```
+
+## /tmp/irmin/data
+
+all top level domains included under the same git repo.
+```
+$ irmin list -s git --root /tmp/irmin/data /
+DIR  example.org
+DIR  x.com
+
+$ irmin list -s git --root /tmp/irmin/data /example.org
+FILE index.html
+
+$ irmin get -s git --root /tmp/irmin/data /example.org/index.html
+{
+  "uri": "https://www.example.org",
+  "secure": 1,
   "headers": [
     {
-      "key": "access-control-allow-headers",
-      "value": "Origin, X-Requested-With, Content-Type, Accept"
+      "key": "accept-ranges",
+      "value": "bytes"
     },
     {
-      "key": "access-control-allow-origin",
-      "value": "*"
+      "key": "age",
+      "value": "288506"
     },
     {
-      "key": "connection",
-      "value": "keep-alive"
+      "key": "cache-control",
+      "value": "max-age=604800"
     },
     {
       "key": "content-length",
-      "value": "70"
+      "value": "1256"
     },
     {
       "key": "content-type",
-      "value": "text/html; charset=utf-8"
+      "value": "text/html; charset=UTF-8"
     },
     {
       "key": "date",
-      "value": "Mon, 13 Apr 2020 11:38:01 GMT"
+      "value": "Sun, 17 May 2020 12:32:49 GMT"
     },
     {
       "key": "etag",
-      "value": "W/\"46-tscUFzqcEDynW2eG488SxkcI1AA\""
+      "value": "\"3147526947\""
     },
     {
-      "key": "x-powered-by",
-      "value": "Express"
+      "key": "expires",
+      "value": "Sun, 24 May 2020 12:32:49 GMT"
+    },
+    {
+      "key": "last-modified",
+      "value": "Thu, 17 Oct 2019 07:18:26 GMT"
+    },
+    {
+      "key": "server",
+      "value": "ECS (nyb/1D1F)"
+    },
+    {
+      "key": "vary",
+      "value": "Accept-Encoding"
+    },
+    {
+      "key": "x-cache",
+      "value": "HIT"
     }
   ],
-  "locals": [
-    "http://localhost:8000/baz",
-    "http://localhost:8000/foo"
+  "globals": [
+    "https://www.iana.org/domains/example"
   ]
 }
 ```
 
-Usage
-=====
-
-## Client
-
-```bash
-./_build/default/bin/main.exe https://www.wired.com
-
-main.exe: [INFO] Fetching: https://www.wired.com
-main.exe: [INFO] Total 105 URL addresses extracted in 0.720915 secs. locals: 92, globals: 13
-main.exe: [INFO] Saving data repo:(wired.com) to key:(/wired.com/index.html)
-main.exe: [INFO] Saving site repo:(wired.com) to key:(/index.html)
-```
-
-## GraphQL
-
-```bash
-./_build/default/bin/graphql.exe
-```
