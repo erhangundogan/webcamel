@@ -44,13 +44,14 @@ module Data = struct
     let headers : Graphql.Page.header list = item.headers in
     let locals = convert_set item.locals in
     let globals = convert_set item.globals in
+    let page = item.content in
     let secure =
       let final_uri =
         if Option.is_some item.redirect
         then Option.get item.redirect
         else item.uri in
       (Option.get @@ Uri.scheme final_uri) = "https" in
-    { uri; redirect; secure; headers; locals; globals }
+    { uri; redirect; secure; headers; locals; globals; page }
 
     let save (address: string) (content: Graphql.Page.t) : unit Lwt.t =
       let repo = get_repo address in

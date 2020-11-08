@@ -24,9 +24,8 @@ let rec fetch uri =
   Client.get ~headers uri >>= fun (res, body) ->
     if is_redirection res.status
     then
-      get_location res.headers uri
-      |> fun loc -> Logs.info (fun m ->
-        m "%s is redirecting to %s" (Uri.to_string uri) (Uri.to_string loc));
-        fetch loc
+      let redirection_uri = get_location res.headers uri in
+      Logs.info (fun m -> m "%s is redirecting to %s" (Uri.to_string uri) (Uri.to_string redirection_uri));
+      fetch redirection_uri
     else
       Body.to_string body >>= fun body -> Lwt.return (body, res.headers, uri)

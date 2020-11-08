@@ -14,3 +14,4 @@ let web_client_headers = [
   ("accept", "text/html");
   ("accept-language", "en-US,en;q=0.5")
 ]
+let uri_schemes_supported = ["http"; "https"]

@@ -13,6 +13,7 @@ module Page = struct
     headers: header list;
     locals: string list;
     globals: string list;
+    page: string;
   }
 
   let header =
@@ -24,14 +25,15 @@ module Page = struct
 
   let t =
     let open Irmin.Type in
-    record "page" (fun uri redirect secure headers locals globals ->
-      { uri; redirect; secure; headers; locals; globals })
+    record "page" (fun uri redirect secure headers locals globals page ->
+      { uri; redirect; secure; headers; locals; globals; page })
     |+ field "uri" string (fun t -> t.uri)
     |+ field "redirect" (option string) (fun t -> t.redirect)
     |+ field "secure" bool (fun t -> t.secure)
     |+ field "headers" (list header) (fun t -> t.headers)
     |+ field "locals" (list string) (fun t -> t.locals)
     |+ field "globals" (list string) (fun t -> t.globals)
+    |+ field "page" string (fun t -> t.page)
     |> sealr
 
   let merge = Irmin.Merge.(option (idempotent t))
@@ -76,6 +78,8 @@ module Custom_types = struct
                 ~resolve:(fun _ p -> p.Page.locals);
               field "globals" ~typ:(non_null (list (non_null string))) ~args:[]
                 ~resolve:(fun _ p -> p.Page.globals);
+              field "page" ~typ:(non_null string) ~args:[]
+                ~resolve:(fun _ p -> p.Page.page);
             ]))
 
     let header_arg_typ =
@@ -84,7 +88,7 @@ module Custom_types = struct
           ~fields:
             [
               arg "key" ~typ:(non_null string);
-              arg "value" ~typ:(non_null string);
+              arg "value" ~typ:(non_null string)
             ]
           ~coerce:(fun (key: string) (value: string) : Page.header -> { key; value })
       )
@@ -99,9 +103,10 @@ module Custom_types = struct
               arg "secure" ~typ:(non_null bool);
               arg "headers" ~typ:(non_null (list (non_null header_arg_typ)));
               arg "locals" ~typ:(non_null (list (non_null string)));
-              arg "globals" ~typ:(non_null (list (non_null string)))
+              arg "globals" ~typ:(non_null (list (non_null string)));
+              arg "page" ~typ:(non_null string)
             ]
-          ~coerce:(fun uri redirect secure headers locals globals ->
+          ~coerce:(fun uri redirect secure headers locals globals page ->
             {
               Page.uri;
               redirect;
@@ -109,6 +114,7 @@ module Custom_types = struct
               headers;
               locals;
               globals;
+              page
             }))
   end
 end

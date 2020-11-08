@@ -1,10 +1,10 @@
 open Webcamel
 
-let run uri _int _ext =
+let run uri _ext =
   Fmt_tty.setup_std_outputs ();
   Logs.set_level @@ Some Logs.Info;
   Logs.set_reporter (Logs_fmt.reporter ());
-  Lwt_main.run (Main.crawl uri)
+  Lwt_main.run (Main.crawl uri _ext)
 
 open Cmdliner
 
@@ -18,15 +18,10 @@ let arg_uri =
   in
   Arg.(required & pos 0 (some loc) None & info [] ~docv:"URI" ~doc)
 
-let arg_internal =
-  let doc =
-    "Crawl internal web site with all paths" in
-  Arg.(value & flag & info ["i"; "internal"] ~doc)
-
 let arg_external =
   let doc =
-    "Crawl external domains (n) iterations (default None)" in
-  Arg.(value & opt (some int) None & info ["e"; "external"] ~doc)
+    "Crawl external links first" in
+  Arg.(value & flag & info ["e"; "external"] ~docv:"EXTERNAL" ~doc)
 
 (*let arg_connection_count =
   let doc =
@@ -34,16 +29,17 @@ let arg_external =
   Arg.(value & opt int 1 & info ["c"; "conection"] ~doc)*)
 
 let cmd =
-  let doc = "Retrieve a remote URI content and extract URLs" in
+  let doc = "Request URI, parse HTML, extract internal paths & external links and store data in irmin git db" in
   let man = [
     `S "DESCRIPTION";
-    `P "$(tname) fetches the remote $(i,URI) and then parse HTML content. \
-        Then extracts anchor elements' href attributes to continue crawling \
-        the web. It can save source code and data into git database";
+    `P "$(tname) fetches remote $(i,URI) and then based on the response it parses HTML content. \
+        Extracts anchor elements and their href attributes from parsed HTML content. It extracts \
+        internal and external links and starts crawling internal links first unless $(i,EXTERNAL) \
+        flag defined. It saves source code and analyzed data into the irmin git database";
     `S "BUGS";
     `P "Report then via e-mail to Erhan Gundogan <erhan.gundogan at gmail.com>." ]
   in
-  Term.(pure run $ arg_uri $ arg_internal $ arg_external),
+  Term.(pure run $ arg_uri $ arg_external),
   Term.info "webcamel" ~version:Webcamel.Version.v ~doc ~man
 
 let () =
